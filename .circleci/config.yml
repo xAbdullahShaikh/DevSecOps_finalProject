@@ -3,25 +3,23 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: cimg/node:18.18.2  # Node.js image because it's a React.js project
+      - image: cimg/node:18.18.2
 
     steps:
       - checkout
-
       - run:
           name: Install Node.js Dependencies
           command: npm install
-
       - run:
           name: Build React.js App
           command: npm run build
-
       - run:
           name: Run SonarCloud Analysis
           command: |
-            curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
-            unzip sonar-scanner.zip
-            ./sonar-scanner-*/bin/sonar-scanner \
+            export SONAR_SCANNER_VERSION=5.0.1.3006
+            curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux.zip
+            unzip -q sonar-scanner.zip
+            ./sonar-scanner-${SONAR_SCANNER_VERSION}-linux/bin/sonar-scanner \
               -Dsonar.projectKey=$SONAR_PROJECT_KEY \
               -Dsonar.organization=$SONAR_ORG \
               -Dsonar.sources=. \
