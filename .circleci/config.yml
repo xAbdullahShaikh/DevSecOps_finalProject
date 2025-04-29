@@ -1,1 +1,37 @@
+version: 2.1
 
+executors:
+  node_executor:
+    docker:
+      - image: cimg/node:18.17.0
+
+jobs:
+  security-checks:
+    executor: node_executor
+    steps:
+      - checkout
+
+      - run:
+          name: Install Dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y git python3-pip
+            pip install gitleaks bandit
+
+      - run:
+          name: Run Gitleaks on test cases
+          command: |
+            echo "Running Gitleaks in test-cases/gitleaks"
+            gitleaks detect --source test-cases/gitleaks --no-banner --exit-code 1
+
+      - run:
+          name: Run Bandit on test cases
+          command: |
+            echo "Running Bandit in test-cases/bandit"
+            bandit -r test-cases/bandit -ll || echo "Bandit found issues"
+
+workflows:
+  version: 2
+  check-security:
+    jobs:
+      - security-checks
