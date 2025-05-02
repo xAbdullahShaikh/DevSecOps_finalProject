@@ -30,6 +30,18 @@ jobs:
             unzip dependency-check-8.4.0-release.zip
             ./dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports
 
+      - run:
+          name: Run SonarCloud Analysis
+          command: |
+            curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+            unzip sonar-scanner.zip
+            ./sonar-scanner-*/bin/sonar-scanner \
+              -Dsonar.projectKey=$SONAR_PROJECT_KEY \
+              -Dsonar.organization=$SONAR_ORG \
+              -Dsonar.sources=. \
+              -Dsonar.host.url=https://sonarcloud.io \
+              -Dsonar.login=$SONAR_TOKEN
+
       - store_artifacts:
           path: reports
           destination: dependency-check-report
