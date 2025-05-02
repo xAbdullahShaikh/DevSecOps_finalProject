@@ -6,7 +6,7 @@ executors:
       - image: cimg/node:18.17.0
 
 jobs:
-  security-checks:
+  build:
     executor: node_executor
     steps:
       - checkout
@@ -14,24 +14,26 @@ jobs:
       - run:
           name: Install Dependencies
           command: |
-            sudo apt-get update
-            sudo apt-get install -y curl unzip python3-pip
-            pip install bandit
+            npm ci
 
       - run:
-          name: Run Bandit
+          name: Build React App
           command: |
-            bandit -r test-cases/bandit -ll || echo "Bandit found issues"
+            npm run build
 
       - run:
           name: Run OWASP Dependency Check
           command: |
             curl -sSLo dependency-check.zip https://github.com/jeremylong/DependencyCheck/releases/download/v8.4.0/dependency-check-8.4.0-release.zip
             unzip dependency-check.zip -d ./dependency-check
-            ./dependency-check/bin/dependency-check.sh --project "DevSecOps_finalProject" --scan . --format HTML --out reports
+            ./dependency-check/bin/dependency-check.sh  --scan . --format HTML --out reports
+
+      - store_artifacts:
+          path: reports
+          destination: dependency-check-report
 
 workflows:
   version: 2
-  check-security:
+  build_and_scan:
     jobs:
-      - security-checks
+      - build
