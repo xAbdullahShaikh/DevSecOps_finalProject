@@ -12,17 +12,29 @@ jobs:
       - checkout
 
       - run:
-          name: Install System Dependencies
+          name: Install Dependencies
           command: |
             sudo apt-get update
             sudo apt-get install -y curl unzip python3-pip
             pip install bandit
+            npm install --save-dev eslint eslint-plugin-security
 
       - run:
-          name: Run Bandit on test cases
+          name: Run ESLint Security Scan
           command: |
-            echo "Running Bandit in test-cases/bandit"
+            npx eslint test-cases/eslint --ext .js || echo "ESLint found issues"
+
+      - run:
+          name: Run Bandit
+          command: |
             bandit -r test-cases/bandit -ll || echo "Bandit found issues"
+
+      - run:
+          name: Run OWASP Dependency Check
+          command: |
+            curl -sSLo dependency-check.zip https://github.com/jeremylong/DependencyCheck/releases/download/v8.4.0/dependency-check-8.4.0-release.zip
+            unzip dependency-check.zip -d ./dependency-check
+            ./dependency-check/bin/dependency-check.sh --project "hoobank" --scan . --format HTML --out reports
 
 workflows:
   version: 2
