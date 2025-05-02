@@ -17,7 +17,7 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y curl unzip python3-pip
             pip install bandit
-            npm install --save-dev eslint eslint-plugin-security
+            npm install --save-dev eslint eslint-plugin-security@latest
 
       - run:
           name: Run ESLint Security Scan
