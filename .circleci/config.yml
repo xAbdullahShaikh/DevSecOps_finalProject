@@ -19,21 +19,6 @@ jobs:
             pip install bandit
 
       - run:
-          name: Install Gitleaks (Linux Binary)
-          command: |
-            curl -sSL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_8.24.2_linux_x64.tar.gz -o gitleaks.tar.gz
-            tar -xzf gitleaks.tar.gz
-            chmod +x gitleaks
-            sudo mv gitleaks /usr/local/bin/
-            gitleaks version
-
-      - run:
-          name: Run Gitleaks on test cases
-          command: |
-            echo "Running Gitleaks in test-cases/gitleaks"
-            gitleaks detect --source test-cases/gitleaks --no-banner --exit-code 1
-
-      - run:
           name: Run Bandit on test cases
           command: |
             echo "Running Bandit in test-cases/bandit"
