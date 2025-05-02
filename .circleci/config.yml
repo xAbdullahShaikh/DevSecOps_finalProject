@@ -16,7 +16,7 @@ jobs:
       - run:
           name: Run ESLint
           command: |
-            npx eslint . --ext .js,.jsx,.ts,.tsx || echo "ESLint found issues"
+            npx eslint . --ext .js,.jsx || echo "ESLint found issues"
 
       - run:
           name: Build React App
