@@ -1,20 +1,17 @@
 version: 2.1
 
-executors:
-  node_executor:
-    docker:
-      - image: cimg/node:18.17.0
-
 jobs:
   build:
-    executor: node_executor
+    docker:
+      - image: cimg/openjdk:17.0-node  # Includes both Node.js and Java
+
     steps:
       - checkout
 
       - run:
           name: Install Dependencies
           command: |
-            npm ci
+            npm install
 
       - run:
           name: Build React App
