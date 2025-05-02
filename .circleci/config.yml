@@ -6,16 +6,16 @@ orbs:
 jobs:
   build:
     docker:
-      - image: cimg/node:18.20.2
-
+      - image: cimg/node:18.20.2  # Modern image with Node.js
     steps:
       - checkout
-      - run: npm install
-      - eslint/lint:
-          wd: ~/project
-          files: src/**    # or . if you want the whole repo scanned
-          npm_install: false
-          create_badges: false
+
+      - run:
+          name: Install Dependencies
+          command: npm install
+
+      - eslint/lint:   # Corrected to use the `lint` command from the ESLint orb
+          files: "lib/**"  # Specify the files to lint (adjust as necessary)
 
 workflows:
   version: 2
