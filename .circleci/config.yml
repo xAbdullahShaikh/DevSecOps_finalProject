@@ -28,7 +28,7 @@ jobs:
           command: |
             curl -sSLo dependency-check.zip https://github.com/jeremylong/DependencyCheck/releases/download/v8.4.0/dependency-check-8.4.0-release.zip
             unzip dependency-check.zip -d ./dependency-check
-            ./dependency-check/bin/dependency-check.sh --project "hoobank" --scan . --format HTML --out reports
+            ./dependency-check/bin/dependency-check.sh --project "DevSecOps_finalProject" --scan . --format HTML --out reports
 
 workflows:
   version: 2
