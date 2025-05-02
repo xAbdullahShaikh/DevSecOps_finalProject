@@ -17,9 +17,9 @@ jobs:
           name: Run Snyk SCA Scan
           command: |
             npm install -g snyk
-            snyk auth $SNYK_TOKEN
-            snyk test || echo "Snyk found issues"
-
+            npx snyk auth $SNYK_TOKEN
+            npx snyk test || echo "Snyk found issues"
+            
       - store_artifacts:
           path: reports
           destination: dependency-check-report
