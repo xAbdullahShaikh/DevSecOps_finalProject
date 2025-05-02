@@ -1,28 +1,22 @@
 version: 2.1
 
+orbs:
+  snyk: snyk/snyk@1.6.0
+
 jobs:
   build:
     docker:
-      - image: cimg/openjdk:17.0-node  # Includes both Node.js and Java
-
+      - image: cimg/node:18.20.2  # Modern image with Node.js
     steps:
       - checkout
 
       - run:
           name: Install Dependencies
-          command: |
-            npm install 
+          command: npm install
 
-      - run:
-          name: Run Snyk SCA Scan
-          command: |
-            npm install -g snyk
-            npx snyk auth $SNYK_TOKEN
-            npx snyk test || echo "Snyk found issues"
-            
-      - store_artifacts:
-          path: reports
-          destination: dependency-check-report
+      - snyk/scan:
+          monitor-on-build: true  # optional: sends results to Snyk dashboard
+          fail-on-issues: false   # prevent build from failing on vulnerabilities
 
 workflows:
   version: 2
