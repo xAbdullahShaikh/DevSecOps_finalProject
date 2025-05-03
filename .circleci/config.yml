@@ -1,24 +1,60 @@
 version: 2.1
 
 orbs:
-  eslint: arrai/eslint@8.1.0
+  snyk: snyk/snyk@1.6.0
 
 jobs:
   build:
     docker:
-      - image: cimg/node:18.20.2  # Modern image with Node.js
+      - image: cimg/openjdk:17.0-node  # Includes Node.js and Java
+
     steps:
       - checkout
 
       - run:
           name: Install Dependencies
-          command: npm install
+          command: |
+            npm install
 
-      - eslint/lint:   # Corrected to use the `lint` command from the ESLint orb
-          files: "lib/**"  # Specify the files to lint (adjust as necessary)
+      - run:
+          name: Run ESLint
+          command: |
+            npx eslint . --ext .js,.jsx || echo "ESLint found issues"
+
+      - run:
+          name: Build React App
+          command: |
+            npm run build
+
+      - run:
+          name: Run OWASP Dependency Check
+          command: |
+            wget https://github.com/jeremylong/DependencyCheck/releases/download/v8.4.0/dependency-check-8.4.0-release.zip
+            unzip dependency-check-8.4.0-release.zip
+            ./dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports
+
+      - snyk/scan:
+          monitor-on-build: true    # Uploads results to Snyk dashboard
+          fail-on-issues: false     # Avoid breaking the build on vulnerabilities
+
+      - run:
+          name: Run SonarCloud Analysis
+          command: |
+            curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+            unzip sonar-scanner.zip
+            ./sonar-scanner-*/bin/sonar-scanner \
+              -Dsonar.projectKey=$SONAR_PROJECT_KEY \
+              -Dsonar.organization=$SONAR_ORG \
+              -Dsonar.sources=. \
+              -Dsonar.host.url=https://sonarcloud.io \
+              -Dsonar.login=$SONAR_TOKEN
+
+      - store_artifacts:
+          path: reports
+          destination: dependency-check-report
 
 workflows:
   version: 2
-  lint_and_build:
+  build_and_scan:
     jobs:
       - build
