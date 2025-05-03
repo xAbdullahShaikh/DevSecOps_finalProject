@@ -1,7 +1,7 @@
 version: '2.1'
 
 orbs:
-  zap: previousnext/zap@1.2.3
+  zap: pnx/zap@1.0.1
 
 workflows:
   use-my-orb:
