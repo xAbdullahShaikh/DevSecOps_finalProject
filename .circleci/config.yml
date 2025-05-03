@@ -1,23 +1,36 @@
 version: 2.1
 
-jobs:
-  zap_ui_scan:
+executors:
+  docker-executor:
     docker:
-      - image: owasp/zap2docker-stable
+      - image: cimg/base:stable  # Use a minimal base image
+    working_directory: ~/project
+
+jobs:
+  zap_scan:
+    executor: docker-executor
     steps:
+      - setup_remote_docker:
+          version: 20.10.7
+          docker_layer_caching: true
+
       - run:
-          name: Run ZAP Full Scan
+          name: Authenticate to Docker Hub
           command: |
-            mkdir -p /zap/wrk
-            zap-full-scan.py \
-              -t https://hoooobank.netlify.app \
-              -r report.html
+            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+      - run:
+          name: Pull and Run ZAP Scan
+          command: |
+            docker pull owasp/zap2docker-stable
+            docker run -v $(pwd):/zap/wrk owasp/zap2docker-stable zap-full-scan.py -t https://hoooobank.netlify.app -r zap_report.html
+
       - store_artifacts:
-          path: /zap/wrk
+          path: ./zap_report.html
           destination: zap-report
 
 workflows:
   version: 2
-  scan_workflow:
+  zap_scan_workflow:
     jobs:
-      - zap_ui_scan
+      - zap_scan
