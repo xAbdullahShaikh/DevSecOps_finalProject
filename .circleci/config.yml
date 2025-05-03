@@ -1,12 +1,23 @@
-version: '2.1'
+version: 2.1
 
-orbs:
-  zap: pnx/zap@1.0.1
+jobs:
+  zap_ui_scan:
+    docker:
+      - image: owasp/zap2docker-stable
+    steps:
+      - run:
+          name: Run ZAP Full Scan
+          command: |
+            mkdir -p /zap/wrk
+            zap-full-scan.py \
+              -t https://hoooobank.netlify.app \
+              -r report.html
+      - store_artifacts:
+          path: /zap/wrk
+          destination: zap-report
 
 workflows:
-  use-my-orb:
+  version: 2
+  scan_workflow:
     jobs:
-      - zap/scan:
-          endpoint: https://hoooobank.netlify.app
-          script: zap-baseline.py
-
+      - zap_ui_scan
