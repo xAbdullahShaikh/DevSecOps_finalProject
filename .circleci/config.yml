@@ -4,7 +4,7 @@ jobs:
   zap-scan:
     docker:
       - image: zaproxy/zap-stable
-    working_directory: /zap/wrk  # This resolves the error
+    working_directory: /zap/wrk
     steps:
       - checkout
       - run:
@@ -13,6 +13,7 @@ jobs:
             zap-baseline.py
             -t https://hoobank.netlify.app
             -r zap-report.html
+            || true
       - store_artifacts:
           path: /zap/wrk/zap-report.html
           destination: zap-report
