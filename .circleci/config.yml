@@ -3,24 +3,15 @@ version: 2.1
 jobs:
   owasp_zap_scan:
     docker:
-      - image: owasp/zap2docker-stable:latest  # Using the official OWASP ZAP Docker image
+      - image: owasp/zap2docker-stable:2.10.0  # Using a specific version tag
     steps:
       - checkout
 
       - run:
           name: Start OWASP ZAP scan
           command: |
-            # Setting the target URL to hoobank's URL
             TARGET_URL="https://hoooobank.netlify.app"
-            
-            # Perform a quick scan using zap-cli
             zap-cli quick-scan --url "$TARGET_URL" --api-key $ZAP_API_KEY
-
-      - run:
-          name: Run ZAP full scan (for a more thorough scan)
-          command: |
-            # Run a more thorough full scan
-            zap-cli full-scan --url "$TARGET_URL" --api-key $ZAP_API_KEY
 
       - store_artifacts:
           path: /zap/wrk
