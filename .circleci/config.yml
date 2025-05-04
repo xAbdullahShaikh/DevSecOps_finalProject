@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  snyk: snyk/snyk@1.6.0
+
 jobs:
   build:
     docker:
@@ -37,33 +40,16 @@ jobs:
             trivy image --format json --output trivy_report.json codenameab/finalimage:securex
             cat trivy_report.json
 
-      # Store Trivy scan results as artifact
+      # Store Trivy scan results
       - store_artifacts:
           path: trivy_report.json
           destination: trivy-scan-report
 
-      # Install Snyk
-      - run:
-          name: Install Snyk
-          command: |
-            npm install -g snyk
-
-      # Authenticate Snyk (ensure you have your SNYK_TOKEN in CircleCI environment variables)
-      - run:
-          name: Snyk Authentication
-          command: snyk auth "$SNYK_TOKEN"
-
-      # Scan Docker image with Snyk
-      - run:
-          name: Snyk Container Scan
-          command: |
-            snyk container test codenameab/finalimage:securex --json > snyk_report.json
-            cat snyk_report.json
-
-      # Store Snyk scan results as artifact
-      - store_artifacts:
-          path: snyk_report.json
-          destination: snyk-scan-report
+      # Snyk scan via Orb
+      - snyk/scan:
+          docker-image-name: codenameab/finalimage:securex
+          monitor-on-build: true
+          fail-on-issues: false
 
       # Docker Hub login
       - run:
