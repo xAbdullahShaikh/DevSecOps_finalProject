@@ -1,40 +1,33 @@
 version: 2.1
 
 jobs:
-  sqlmap_scan:
-    machine:
-      image: ubuntu-2204:current
+  owasp_zap_scan:
+    docker:
+      - image: owasp/zap2docker-stable:latest  # Using the official OWASP ZAP Docker image
     steps:
       - checkout
 
       - run:
-          name: Install Docker, Python & SQLMap
+          name: Start OWASP ZAP scan
           command: |
-            sudo apt-get update
-            sudo apt-get install -y docker.io python3 python3-pip
-            sudo systemctl start docker
-            sudo usermod -aG docker $USER
-            pip3 install sqlmap
+            # Setting the target URL to hoobank's URL
+            TARGET_URL="https://hoooobank.netlify.app"
+            
+            # Perform a quick scan using zap-cli
+            zap-cli quick-scan --url "$TARGET_URL" --api-key $ZAP_API_KEY
 
       - run:
-          name: Start DVWA (Damn Vulnerable Web App)
+          name: Run ZAP full scan (for a more thorough scan)
           command: |
-            docker run -d -p 8080:80 --name dvwa vulnerables/web-dvwa
-            echo "Waiting for DVWA to start..."
-            sleep 30  # wait for container to be ready
-
-      - run:
-          name: Run SQLMap against DVWA
-          command: |
-            TARGET_URL="http://localhost:8080/vulnerabilities/sqli/?id=1&Submit=Submit"
-            sqlmap -u "$TARGET_URL" --data="id=1&Submit=Submit" --cookie="security=low; PHPSESSID=123" --batch --risk=3 --level=5 --output-dir=sqlmap-output
+            # Run a more thorough full scan
+            zap-cli full-scan --url "$TARGET_URL" --api-key $ZAP_API_KEY
 
       - store_artifacts:
-          path: sqlmap-output
-          destination: sqlmap-report
+          path: /zap/wrk
+          destination: zap-report
 
 workflows:
   version: 2
   scan-and-test:
     jobs:
-      - sqlmap_scan
+      - owasp_zap_scan
