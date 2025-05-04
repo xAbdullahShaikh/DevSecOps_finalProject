@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   scan_and_push_image:
     docker:
-      - image: docker:latest
+      - image: cimg/openjdk:17.0-node
         entrypoint: [""]
 
     steps:
@@ -12,13 +12,7 @@ jobs:
 
       # Step 2: Set up remote Docker environment
       - setup_remote_docker:
-          version: '20.10.7'
-          docker_layer_caching: true
-          access_key: $DOCKER_ACCESS_KEY
-          secret_key: $DOCKER_SECRET_KEY
-          insecure: false  # Disable insecure connections if using official Docker Hub
-          force_pull: true  # Always pull the base Docker images
-
+          
       # Step 3: Build the Docker image
       - run:
           name: Build Docker Image
