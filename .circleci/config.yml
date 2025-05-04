@@ -1,72 +1,20 @@
-version: 2.1
-
-orbs:
-  snyk: snyk/snyk@1.6.0
-
 jobs:
   build:
-    docker:
-      - image: cimg/openjdk:17.0-node
-    steps:
-      - checkout
-
-  docker_build:
     docker:
       - image: cimg/python:3.10
     steps:
       - checkout
-      - setup_remote_docker
 
-      # Build Docker image
       - run:
-          name: Build Docker Image
-          command: docker build -t codenameab/finalimage:securex .
-
-      # Install Trivy
-      - run:
-          name: Install Trivy
+          name: Install Bandit
           command: |
-            sudo apt-get update
-            sudo apt-get install -y wget apt-transport-https gnupg lsb-release
-            wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-            echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
-            sudo apt-get update
-            sudo apt-get install -y trivy
+            pip install bandit
 
-      # Scan Docker image with Trivy
       - run:
-          name: Trivy Image Scan
+          name: Run Bandit on Test Case File
           command: |
-            trivy image --format json --output trivy_report.json codenameab/finalimage:securex
-            cat trivy_report.json
+            bandit /test-cases/bandit/test_vuln.py -f json -o bandit_report.json || true
 
-      # Store Trivy scan results
       - store_artifacts:
-          path: trivy_report.json
-          destination: trivy-scan-report
-
-      # Snyk scan via Orb
-      - snyk/scan:
-          docker-image-name: codenameab/finalimage:securex
-          monitor-on-build: true
-          fail-on-issues: false
-
-      # Docker Hub login
-      - run:
-          name: Login to Docker Hub
-          command: |
-            echo "$DOCKERHUB_PASSWORD" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
-
-      # Push Docker image
-      - run:
-          name: Push Docker Image
-          command: docker push codenameab/finalimage:securex
-
-workflows:
-  version: 2
-  build_and_push:
-    jobs:
-      - build
-      - docker_build:
-          requires:
-            - build
+          path: bandit_report.json
+          destination: bandit-scan-report
