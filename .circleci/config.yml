@@ -4,40 +4,20 @@ orbs:
   k6: grafana/k6@1.1.3
 
 jobs:
-  # 1) Build your React/Tailwind Docker image
-  docker_build:
-    docker:
-      - image: cimg/python:3.10
+  k6_test:
+    executor: k6/default    # uses the k6 container with k6 pre‑installed
     steps:
       - checkout
-      - setup_remote_docker
-      - run:
-          name: Build Docker Image
-          command: |
-            docker build -t codenameab/finalimage:securex .
-      - run:
-          name: Push to Docker Hub
-          command: |
-            echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            docker push codenameab/finalimage:securex
 
-  # 2) Run k6 load test using the Grafana k6 orb
-  k6_test:
-    # use the orb’s executor (must match the orb alias: k6/default)
-    executor: k6/default
+    
 
-    steps:
-      - checkout                    # pull down your repo
-      - k6/run:                     # this is the orb command
-          script: test-cases/k6/load-test.js
+      # Run your load‑testing script
+      - k6/run:
+          script: test-cases/k6/load-testing.js
           flags: --vus 20 --duration 30s
-          thresholds: "http_req_failed<0.01"
+          thresholds: "http_req_duration[p(95)]<200"
 
 workflows:
-  version: 2
-  build_and_test:
+  load_test:
     jobs:
-      - docker_build             # first build & push the image
-      - k6_test:                 
-          requires:
-            - docker_build       # then run your k6 job
+      - k6_test
