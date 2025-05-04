@@ -26,16 +26,16 @@ jobs:
             docker push codenameab/finalimage:securex
 
   k6_test:
-    # this job uses the grafana/k6 orb
+    # ← You must tell CircleCI to use the k6 executor from the orb
     executor: k6/default
+
     steps:
       - checkout
+
+      # ← This is the orb-provided step
       - k6/run:
-          # path to your K6 JS script in the repo
           script: test-cases/k6/load-test.js
-          # you can pass any k6 CLI flags here, e.g. --vus 50 --duration 30s
           flags: --vus 20 --duration 30s
-          # optionally fail the job if thresholds aren’t met
           thresholds: 'http_req_failed<0.01'
 
 workflows:
