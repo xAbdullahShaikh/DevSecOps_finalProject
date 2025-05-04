@@ -17,7 +17,7 @@ jobs:
       # Build Docker image
       - run:
           name: Build Docker Image
-          command: docker build -t codenameab/FinalImage:securex .
+          command: docker build -t codenameab/finalimage:securex .
 
       # Install Trivy
       - run:
@@ -34,7 +34,7 @@ jobs:
       - run:
           name: Trivy Image Scan
           command: |
-            trivy image --format json --output trivy_report.json codenameab/FinalImage:securex
+            trivy image --format json --output trivy_report.json codenameab/finalimage:securex
             cat trivy_report.json
 
       # Store Trivy scan results as artifact
