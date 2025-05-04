@@ -1,31 +1,9 @@
-version: 2.1
-
-jobs:
-  build-and-log:
-    docker:
-      - image: cimg/node:18.17  # For React+Tailwind builds
-    steps:
-      - checkout
-
-      # Install Docker client and start remote engine
-      - setup_remote_docker
-
-      # Build your React Docker image
       - run:
-          name: Build React App Docker Image
+          name: Create promtail config file
           command: |
-            docker build -t my-react-app .
-
-      # Pull Loki, Promtail, and Grafana containers
-      - run:
-          name: Start Loki + Promtail
-          command: |
-            docker network create loki-net
-
-            docker run -d --name loki --network=loki-net -p 3100:3100 grafana/loki:2.9.2 \
-              -config.file=/etc/loki/local-config.yaml
-
-            echo '
+            echo 'Creating promtail-config.yml'
+            mkdir -p ./tmp
+            cat <<EOF > ./tmp/promtail-config.yml
             server:
               http_listen_port: 9080
               grpc_listen_port: 0
@@ -41,21 +19,13 @@ jobs:
                     labels:
                       job: docker-logs
                       __path__: /var/lib/docker/containers/*/*.log
-            ' > promtail-config.yml
+            EOF
+            ls -l ./tmp
 
+      - run:
+          name: Start Promtail
+          command: |
             docker run -d --name promtail --network=loki-net \
               -v /var/lib/docker/containers:/var/lib/docker/containers:ro \
-              -v $PWD/promtail-config.yml:/etc/promtail/config.yml \
+              -v $PWD/tmp/promtail-config.yml:/etc/promtail/config.yml \
               grafana/promtail:2.9.2 -config.file=/etc/promtail/config.yml
-
-      # Optional: Start Grafana for metrics viewing (you won't access it directly in CircleCI)
-      - run:
-          name: Start Grafana
-          command: |
-            docker run -d --name grafana --network=loki-net -p 3000:3000 grafana/grafana
-
-workflows:
-  version: 2
-  build-monitor:
-    jobs:
-      - build-and-log
