@@ -4,15 +4,17 @@ jobs:
   scan_and_push_image:
     docker:
       - image: cimg/openjdk:17.0-node
-        entrypoint: [""]
-
+        entrypoint: ["/bin/bash", "-c"]
     steps:
       # Step 1: Checkout the repository
       - checkout
 
       # Step 2: Set up remote Docker environment
       - setup_remote_docker:
-          
+          version: '20.10.7'    # specify the Docker version
+          docker_layer_caching: true
+          force_pull: true
+
       # Step 3: Build the Docker image
       - run:
           name: Build Docker Image
