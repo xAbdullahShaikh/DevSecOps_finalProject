@@ -1,36 +1,27 @@
 version: 2.1
 
-executors:
-  docker-executor:
-    docker:
-      - image: cimg/base:stable  # Use a minimal base image
-    working_directory: ~/project
-
 jobs:
-  zap_scan:
-    executor: docker-executor
+  dast_scan:
+    machine:  # Use full VM to allow installing tools and running services
+      image: ubuntu-2204:current
     steps:
-      - setup_remote_docker:
-          version: 20.10.7
-          docker_layer_caching: true
+      - checkout
+      
+      - run:
+          name: Install DAST tools (SQLMap + ZAP)
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y python3 python3-pip openjdk-11-jre wget
+            pip3 install sqlmap
+            wget https://github.com/zaproxy/zaproxy/releases/download/v2.16.1/ZAP_2.16.1_Linux.tar.gz
+            tar -xzf ZAP_2.16.1_Linux.tar.gz
+            sudo mv ZAP_2.16.1 /opt/zaproxy
+            sudo ln -s /opt/zaproxy/zap.sh /usr/local/bin/zap
+
+      -
 
       - run:
-          name: Authenticate to Docker Hub
+          name: Run SQLMap scan against local Juice Shop
           command: |
-            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-
-      - run:
-          name: Pull and Run ZAP Scan
-          command: |
-            docker pull owasp/zap2docker-stable
-            docker run -v $(pwd):/zap/wrk owasp/zap2docker-stable zap-full-scan.py -t https://hoooobank.netlify.app -r zap_report.html
-
-      - store_artifacts:
-          path: ./zap_report.html
-          destination: zap-report
-
-workflows:
-  version: 2
-  zap_scan_workflow:
-    jobs:
-      - zap_scan
+            sleep 30  # wait for the app to start
+            sqlmap -u "https://hoooobank.netlify.app" --batch --risk=3 --level=5
