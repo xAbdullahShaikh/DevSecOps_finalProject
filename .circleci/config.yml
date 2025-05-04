@@ -3,7 +3,8 @@ version: 2.1
 jobs:
   zap-scan:
     docker:
-      - image: zaproxy/zap-stable  # This image already includes ZAP
+      - image: zaproxy/zap-stable
+    working_directory: /zap/wrk  # This resolves the error
     steps:
       - checkout
       - run:
@@ -13,7 +14,7 @@ jobs:
             -t https://hoobank.netlify.app
             -r zap-report.html
       - store_artifacts:
-          path: zap-report.html
+          path: /zap/wrk/zap-report.html
           destination: zap-report
 
 workflows:
