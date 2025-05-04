@@ -42,6 +42,29 @@ jobs:
           path: trivy_report.json
           destination: trivy-scan-report
 
+      # Install Snyk
+      - run:
+          name: Install Snyk
+          command: |
+            npm install -g snyk
+
+      # Authenticate Snyk (ensure you have your SNYK_TOKEN in CircleCI environment variables)
+      - run:
+          name: Snyk Authentication
+          command: snyk auth "$SNYK_TOKEN"
+
+      # Scan Docker image with Snyk
+      - run:
+          name: Snyk Container Scan
+          command: |
+            snyk container test codenameab/finalimage:securex --json > snyk_report.json
+            cat snyk_report.json
+
+      # Store Snyk scan results as artifact
+      - store_artifacts:
+          path: snyk_report.json
+          destination: snyk-scan-report
+
       # Docker Hub login
       - run:
           name: Login to Docker Hub
