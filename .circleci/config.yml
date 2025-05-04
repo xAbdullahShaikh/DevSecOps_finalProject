@@ -1,27 +1,27 @@
 version: 2.1
 
 jobs:
-  dast_scan:
-    machine:  # Use full VM to allow installing tools and running services
+  sqlmap_scan:
+    machine:  # Full VM to install tools and access network
       image: ubuntu-2204:current
+
     steps:
       - checkout
-      
+
       - run:
-          name: Install DAST tools (SQLMap + ZAP)
+          name: Install SQLMap
           command: |
             sudo apt-get update
-            sudo apt-get install -y python3 python3-pip openjdk-11-jre wget
+            sudo apt-get install -y python3 python3-pip
             pip3 install sqlmap
-            wget https://github.com/zaproxy/zaproxy/releases/download/v2.16.1/ZAP_2.16.1_Linux.tar.gz
-            tar -xzf ZAP_2.16.1_Linux.tar.gz
-            sudo mv ZAP_2.16.1 /opt/zaproxy
-            sudo ln -s /opt/zaproxy/zap.sh /usr/local/bin/zap
-
-      -
 
       - run:
-          name: Run SQLMap scan against local Juice Shop
+          name: Run SQLMap Scan
           command: |
-            sleep 30  # wait for the app to start
-            sqlmap -u "https://hoooobank.netlify.app" --batch --risk=3 --level=5
+            # Replace the target URL with your actual endpoint
+            TARGET_URL="https://hoooobank.netlify.app/login"
+            sqlmap -u "$TARGET_URL" --batch --risk=3 --level=5 --crawl=1 --random-agent --output-dir=sqlmap-output
+
+      - store_artifacts:
+          path: sqlmap-output
+          destination: sqlmap-report
