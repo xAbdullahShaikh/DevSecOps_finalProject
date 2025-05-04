@@ -18,8 +18,29 @@ jobs:
           path: /zap/wrk/zap-report.html
           destination: zap-report
 
+  sqlmap_scan:
+    machine:
+      image: ubuntu-2204:current
+    steps:
+      - checkout
+      - run:
+          name: Install SQLMap
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y python3 python3-pip
+            pip3 install sqlmap
+      - run:
+          name: Run SQLMap Scan
+          command: |
+            TARGET_URL="https://hoobank.netlify.app"
+            sqlmap -u "$TARGET_URL" --batch --risk=3 --level=5 --crawl=1 --random-agent --output-dir=sqlmap-output
+      - store_artifacts:
+          path: sqlmap-output
+          destination: sqlmap-report
+
 workflows:
   version: 2
-  zap-workflow:
+  scan-and-test:
     jobs:
       - zap-scan
+      - sqlmap_scan
