@@ -51,7 +51,7 @@ jobs:
       # Push Docker image
       - run:
           name: Push Docker Image
-          command: docker push codenameab/FinalImage:securex
+          command: docker push codenameab/finalimage:securex
 
 workflows:
   version: 2
