@@ -1,23 +1,10 @@
-version: 2.1
-
+version: '2.1'
 orbs:
-  k6: grafana/k6@1.1.3
-
-jobs:
-  k6_test:
-    executor: k6/default    # uses the k6 container with k6 pre‑installed
-    steps:
-      - checkout
-
-    
-
-      # Run your load‑testing script
-      - k6/run:
-          script: test-cases/k6/load-testing.js
-          flags: --vus 20 --duration 30s
-          thresholds: "http_req_duration[p(95)]<200"
-
+  grafana: grafana/k6@1.1.0
 workflows:
   load_test:
     jobs:
-      - k6_test
+      - grafana/k6:
+          script: tests/api-stressing.js
+
+workflows:
