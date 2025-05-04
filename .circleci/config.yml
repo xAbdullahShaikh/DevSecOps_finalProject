@@ -1,49 +1,63 @@
 version: 2.1
 
 jobs:
-  scan_and_push_image:
+  build:
     docker:
       - image: cimg/openjdk:17.0-node
-        entrypoint: ["/bin/bash", "-c"]
     steps:
-      # Step 1: Checkout the repository
       - checkout
 
-      # Step 2: Set up remote Docker environment
-      - setup_remote_docker:
-          version: '20.10.7'    # specify the Docker version
-          docker_layer_caching: true
-          force_pull: true
+  docker_build:
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - checkout
+      - setup_remote_docker
 
-      # Step 3: Build the Docker image
+      # Build Docker image
       - run:
           name: Build Docker Image
-          command: docker build -t my-app:latest .
+          command: docker build -t codenameab/FinalImage:securex .
 
-      # Step 4: Run Trivy Scan
+      # Install Trivy
       - run:
-          name: Run Trivy Scan
+          name: Install Trivy
           command: |
-            trivy image --format json --output trivy_report.json my-app:latest
+            sudo apt-get update
+            sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+            wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+            echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+            sudo apt-get update
+            sudo apt-get install -y trivy
+
+      # Scan Docker image with Trivy
+      - run:
+          name: Trivy Image Scan
+          command: |
+            trivy image --format json --output trivy_report.json codenameab/FinalImage:securex
             cat trivy_report.json
 
-      # Step 5: Store Trivy scan results as artifacts
+      # Store Trivy scan results as artifact
       - store_artifacts:
           path: trivy_report.json
-          destination: trivy-reports
+          destination: trivy-scan-report
 
-      # Step 6: Log in to Docker Hub
+      # Docker Hub login
       - run:
           name: Login to Docker Hub
-          command: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+          command: |
+            echo "$DOCKERHUB_PASSWORD" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
 
-      # Step 7: Push the Docker image to Docker Hub
+      # Push Docker image
       - run:
-          name: Push Docker Image to Docker Hub
-          command: docker push my-app:latest
+          name: Push Docker Image
+          command: docker push codenameab/FinalImage:securex
 
 workflows:
   version: 2
-  build_and_scan:
+  build_and_push:
     jobs:
-      - scan_and_push_image
+      - build
+      - docker_build:
+          requires:
+            - build
