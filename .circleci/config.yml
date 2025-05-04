@@ -1,20 +1,61 @@
+version: 2.1
+
 jobs:
-  build:
+  build-and-log:
     docker:
-      - image: cimg/python:3.10
+      - image: cimg/node:18.17  # For React+Tailwind builds
     steps:
       - checkout
 
-      - run:
-          name: Install Bandit
-          command: |
-            pip install bandit
+      # Install Docker client and start remote engine
+      - setup_remote_docker
 
+      # Build your React Docker image
       - run:
-          name: Run Bandit on Test Case File
+          name: Build React App Docker Image
           command: |
-            bandit /test-cases/bandit/test_vuln.py -f json -o bandit_report.json || true
+            docker build -t my-react-app .
 
-      - store_artifacts:
-          path: bandit_report.json
-          destination: bandit-scan-report
+      # Pull Loki, Promtail, and Grafana containers
+      - run:
+          name: Start Loki + Promtail
+          command: |
+            docker network create loki-net
+
+            docker run -d --name loki --network=loki-net -p 3100:3100 grafana/loki:2.9.2 \
+              -config.file=/etc/loki/local-config.yaml
+
+            echo '
+            server:
+              http_listen_port: 9080
+              grpc_listen_port: 0
+            positions:
+              filename: /tmp/positions.yaml
+            clients:
+              - url: http://loki:3100/loki/api/v1/push
+            scrape_configs:
+              - job_name: docker
+                static_configs:
+                  - targets:
+                      - localhost
+                    labels:
+                      job: docker-logs
+                      __path__: /var/lib/docker/containers/*/*.log
+            ' > promtail-config.yml
+
+            docker run -d --name promtail --network=loki-net \
+              -v /var/lib/docker/containers:/var/lib/docker/containers:ro \
+              -v $PWD/promtail-config.yml:/etc/promtail/config.yml \
+              grafana/promtail:2.9.2 -config.file=/etc/promtail/config.yml
+
+      # Optional: Start Grafana for metrics viewing (you won't access it directly in CircleCI)
+      - run:
+          name: Start Grafana
+          command: |
+            docker run -d --name grafana --network=loki-net -p 3000:3000 grafana/grafana
+
+workflows:
+  version: 2
+  build-monitor:
+    jobs:
+      - build-and-log
