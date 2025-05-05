@@ -1,10 +1,25 @@
-version: '2.1'
-orbs:
-  grafana: grafana/k6@1.1.0
-workflows:
-  load_test:
-    jobs:
-      - grafana/k6:
-          script: tests/api-stressing.js
+version: 2.1
+
+jobs:
+  bandit_scan:
+    docker:
+      - image: python:3.11
+    steps:
+      - checkout
+      - run:
+          name: Install Bandit
+          command: |
+            pip install bandit
+      - run:
+          name: Run Bandit Scan on test cases
+          command: |
+            bandit -r test-cases/bandit -f html -o bandit-report.html || true
+      - store_artifacts:
+          path: bandit-report.html
+          destination: bandit-report
 
 workflows:
+  version: 2
+  security-scan:
+    jobs:
+      - bandit_scan
