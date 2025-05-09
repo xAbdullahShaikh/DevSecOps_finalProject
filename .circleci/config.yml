@@ -6,37 +6,27 @@ orbs:
 jobs:
   build:
     docker:
-      - image: cimg/openjdk:17.0-node  # Includes Node.js and Java
-
+      - image: cimg/openjdk:17.0-node
     steps:
       - checkout
-
       - run:
           name: Install Dependencies
-          command: |
-            npm install
-
+          command: npm install
       - run:
           name: Run ESLint
-          command: |
-            npx eslint . --ext .js,.jsx || echo "ESLint found issues"
-
+          command: npx eslint . --ext .js,.jsx || echo "ESLint found issues"
       - run:
           name: Build React App
-          command: |
-            npm run build
-
+          command: npm run build
       - run:
           name: Run OWASP Dependency Check
           command: |
             wget https://github.com/jeremylong/DependencyCheck/releases/download/v8.4.0/dependency-check-8.4.0-release.zip
             unzip dependency-check-8.4.0-release.zip
             ./dependency-check/bin/dependency-check.sh --scan . --format HTML --out reports
-
       - snyk/scan:
-          monitor-on-build: true    # Uploads results to Snyk dashboard
-          fail-on-issues: false     # Avoid breaking the build on vulnerabilities
-
+          monitor-on-build: true
+          fail-on-issues: false
       - run:
           name: Run SonarCloud Analysis
           command: |
@@ -48,13 +38,109 @@ jobs:
               -Dsonar.sources=. \
               -Dsonar.host.url=https://sonarcloud.io \
               -Dsonar.login=$SONAR_TOKEN
-
       - store_artifacts:
           path: reports
           destination: dependency-check-report
 
+  zap_scan:
+    docker:
+      - image: zaproxy/zap-stable
+    working_directory: /zap/wrk
+    steps:
+      - checkout
+      - run:
+          name: Run ZAP Baseline Scan
+          command: |
+            zap-baseline.py -t https://hoobank.netlify.app -r zap-report.html || true
+      - store_artifacts:
+          path: /zap/wrk/zap-report.html
+          destination: zap-report
+
+  sqlmap_scan:
+    machine:
+      image: ubuntu-2204:current
+    steps:
+      - checkout
+      - run:
+          name: Install SQLMap
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y python3 python3-pip
+            pip3 install sqlmap
+      - run:
+          name: Run SQLMap Scan
+          command: |
+            TARGET_URL="https://hoobank.netlify.app"
+            sqlmap -u "$TARGET_URL" --batch --risk=3 --level=5 --crawl=1 --random-agent --output-dir=sqlmap-output
+      - store_artifacts:
+          path: sqlmap-output
+          destination: sqlmap-report
+
+  docker_build:
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Build Docker Image
+          command: docker build -t codenameab/finalimage:securex .
+      - run:
+          name: Install Trivy
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+            wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+            echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee /etc/apt/sources.list.d/trivy.list
+            sudo apt-get update
+            sudo apt-get install -y trivy
+      - run:
+          name: Trivy Image Scan
+          command: |
+            trivy image --format json --output trivy_report.json codenameab/finalimage:securex
+            cat trivy_report.json
+      - store_artifacts:
+          path: trivy_report.json
+          destination: trivy-scan-report
+      - snyk/scan:
+          docker-image-name: codenameab/finalimage:securex
+          monitor-on-build: true
+          fail-on-issues: false
+      - run:
+          name: Login to Docker Hub
+          command: echo "$DOCKERHUB_PASSWORD" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+      - run:
+          name: Push Docker Image
+          command: docker push codenameab/finalimage:securex
+
+  bandit_scan:
+    docker:
+      - image: python:3.11
+    steps:
+      - checkout
+      - run:
+          name: Install Bandit
+          command: pip install bandit
+      - run:
+          name: Run Bandit Scan on test cases
+          command: |
+            bandit -r test-cases/bandit -f html -o bandit-report.html || true
+      - store_artifacts:
+          path: bandit-report.html
+          destination: bandit-report
+
 workflows:
   version: 2
-  build_and_scan:
+  secure_build_pipeline:
     jobs:
       - build
+      - zap_scan:
+          requires:
+            - build
+      - sqlmap_scan:
+          requires:
+            - build
+      - docker_build:
+          requires:
+            - build
+      - bandit_scan
