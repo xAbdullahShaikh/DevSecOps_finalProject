@@ -1,0 +1,7 @@
+❌ Rule: Scan for insecure third-party dependencies
+Example: Using vulnerable lodash version
+Package: "lodash": "4.17.15"
+
+❌ Rule: Block vulnerable packages using dependency management
+Example: No restrictions or resolutions for known vulnerable packages
+Package: "axios": "0.21.1" (vulnerable to SSRF)
