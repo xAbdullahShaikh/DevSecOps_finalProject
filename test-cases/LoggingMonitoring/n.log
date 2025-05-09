@@ -1,0 +1,2 @@
+2024-05-09T12:15:00Z WARNING Multiple failed login attempts from unknown IP
+2024-05-09T12:20:00Z CRITICAL Sudden API spike detected on /admin endpoint
