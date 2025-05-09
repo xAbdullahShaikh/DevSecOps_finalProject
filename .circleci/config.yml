@@ -18,14 +18,7 @@ jobs:
           path: bandit-report.html
           destination: bandit-report
 
-      # Optional: Trigger another pipeline using the API token
-      - run:
-          name: Trigger Pipeline (Optional)
-          command: |
-            curl -u ${CIRCLE_TOKEN}: \
-              -X POST https://circleci.com/api/v2/project/gh/xAbdullahShaikh/DevSecOps_finalProject/pipeline \
-              -H 'Content-Type: application/json' \
-              -d '{"branch":"main"}'
+      
 
 workflows:
   version: 2
