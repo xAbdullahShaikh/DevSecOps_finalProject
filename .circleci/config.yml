@@ -16,7 +16,7 @@ jobs:
       - run:
           name: Run Checkov on Terraform Files
           command: |
-            checkov -d .test-cases/iac/ --output json --soft-fail > checkov-report.json
+            checkov -d test-cases/iac/ --output json --soft-fail > checkov-report.json
 
       - persist_to_workspace:
           root: .
