@@ -17,7 +17,7 @@ jobs:
           command: |
             TARGET_URL="https://demo.testfire.net/"
             echo "Starting SQLMap scan on $TARGET_URL (1-minute timeout)..."
-            timeout --foreground --kill-after=10s 60s \
+            timeout --foreground --kill-after=10s 180s \
               sqlmap -u "$TARGET_URL" --batch --risk=3 --level=5 --crawl=1 --random-agent --output-dir=sqlmap-output || \
               echo "SQLMap scan timed out or exited with non-zero status."
       - store_artifacts:
