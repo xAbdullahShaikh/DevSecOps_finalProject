@@ -23,6 +23,10 @@ jobs:
           paths:
             - checkov-report.json
 
+      - store_artifacts:
+          path: checkov-report.json
+          destination: checkov-report
+
 workflows:
   checkov_workflow:
     jobs:
