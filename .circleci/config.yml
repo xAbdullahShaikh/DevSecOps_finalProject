@@ -70,7 +70,7 @@ jobs:
       - run:
           name: Run SQLMap Scan
           command: |
-            TARGET_URL="https://hoobank.netlify.app"
+            TARGET_URL="https://www.hackthissite.org/"
             sqlmap -u "$TARGET_URL" --batch --risk=3 --level=5 --crawl=1 --random-agent --output-dir=sqlmap-output
       - store_artifacts:
           path: sqlmap-output
