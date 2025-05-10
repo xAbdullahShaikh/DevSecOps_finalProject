@@ -13,13 +13,13 @@ jobs:
             sudo apt-get install -y python3 python3-pip
             pip3 install sqlmap
       - run:
-          name: Run SQLMap Scan
+          name: Run SQLMap Scan (timeout after 1 minute)
           command: |
             TARGET_URL="https://demo.testfire.net/"
-            sqlmap -u "$TARGET_URL" --batch --risk=3 --level=5 --crawl=1 --random-agent --output-dir=sqlmap-output
-            timeout 100s sqlmap -u "$TARGET_URL" \
-              --batch --risk=3 --level=5 --crawl=1 --random-agent \
-              --output-dir=sqlmap-output || true
+            echo "Starting SQLMap scan on $TARGET_URL (1-minute timeout)..."
+            timeout --foreground --kill-after=10s 60s \
+              sqlmap -u "$TARGET_URL" --batch --risk=3 --level=5 --crawl=1 --random-agent --output-dir=sqlmap-output || \
+              echo "SQLMap scan timed out or exited with non-zero status."
       - store_artifacts:
           path: sqlmap-output
           destination: sqlmap-report
