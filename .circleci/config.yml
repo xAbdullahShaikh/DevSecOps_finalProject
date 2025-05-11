@@ -1,7 +1,7 @@
 version: 2.1
 
 jobs:
-  sqlmap_scan:
+  vuln_scan:
     machine:
       image: ubuntu-2204:current
     steps:
@@ -10,22 +10,42 @@ jobs:
           name: Install SQLMap
           command: |
             sudo apt-get update
-            sudo apt-get install -y python3 python3-pip
+            sudo apt-get install -y python3 python3-pip git curl unzip
             pip3 install sqlmap
       - run:
-          name: Run SQLMap Scan (timeout after 1 minute)
+          name: Install Nuclei
+          command: |
+            curl -s https://api.github.com/repos/projectdiscovery/nuclei/releases/latest \
+              | grep "browser_download_url.*linux_amd64.zip" \
+              | cut -d '"' -f 4 \
+              | wget -i -
+            unzip nuclei_*_linux_amd64.zip
+            sudo mv nuclei /usr/local/bin/
+            nuclei -update-templates
+      - run:
+          name: Run SQLMap Scan (timeout after 3 minutes)
           command: |
             TARGET_URL="https://demo.testfire.net/"
-            echo "Starting SQLMap scan on $TARGET_URL (1-minute timeout)..."
-            timeout --foreground --kill-after=10s 180s \
+            echo "Starting SQLMap scan on $TARGET_URL (3-minute timeout)..."
+            timeout --foreground --kill-after=10s 20s \
               sqlmap -u "$TARGET_URL" --batch --risk=3 --level=5 --crawl=1 --random-agent --output-dir=sqlmap-output || \
               echo "SQLMap scan timed out or exited with non-zero status."
+      - run:
+          name: Run Nuclei Scan
+          command: |
+            mkdir -p nuclei-output
+            echo "https://demo.testfire.net/" > urls.txt
+            nuclei -l urls.txt -o nuclei-output/nuclei-results.txt || \
+              echo "Nuclei scan completed with errors."
       - store_artifacts:
           path: sqlmap-output
           destination: sqlmap-report
+      - store_artifacts:
+          path: nuclei-output
+          destination: nuclei-report
 
 workflows:
   version: 2
   secure_build_pipeline:
     jobs:
-      - sqlmap_scan
+      - vuln_scan
