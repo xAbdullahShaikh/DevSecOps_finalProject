@@ -1,51 +1,21 @@
-version: 2.1
-
 jobs:
-  vuln_scan:
+  nuclei_scan:
     machine:
       image: ubuntu-2204:current
     steps:
       - checkout
       - run:
-          name: Install SQLMap
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y python3 python3-pip git curl unzip
-            pip3 install sqlmap
-      - run:
           name: Install Nuclei
           command: |
-            curl -s https://api.github.com/repos/projectdiscovery/nuclei/releases/latest \
-              | grep "browser_download_url.*linux_amd64.zip" \
-              | cut -d '"' -f 4 \
-              | wget -i -
-            unzip nuclei_*_linux_amd64.zip
+            curl -LO https://github.com/projectdiscovery/nuclei/releases/download/v3.4.3/nuclei_3.4.3_linux_amd64.zip
+            unzip -o nuclei_3.4.3_linux_amd64.zip
             sudo mv nuclei /usr/local/bin/
-            nuclei -update-templates
-      - run:
-          name: Run SQLMap Scan (timeout after 3 minutes)
-          command: |
-            TARGET_URL="https://demo.testfire.net/"
-            echo "Starting SQLMap scan on $TARGET_URL (3-minute timeout)..."
-            timeout --foreground --kill-after=10s 20s \
-              sqlmap -u "$TARGET_URL" --batch --risk=3 --level=5 --crawl=1 --random-agent --output-dir=sqlmap-output || \
-              echo "SQLMap scan timed out or exited with non-zero status."
+            nuclei -version
       - run:
           name: Run Nuclei Scan
           command: |
-            mkdir -p nuclei-output
-            echo "https://demo.testfire.net/" > urls.txt
-            nuclei -l urls.txt -o nuclei-output/nuclei-results.txt || \
-              echo "Nuclei scan completed with errors."
+            TARGET_URL="https://demo.testfire.net"
+            nuclei -u "$TARGET_URL" -o nuclei-report.txt || echo "Nuclei scan completed with non-zero exit"
       - store_artifacts:
-          path: sqlmap-output
-          destination: sqlmap-report
-      - store_artifacts:
-          path: nuclei-output
+          path: nuclei-report.txt
           destination: nuclei-report
-
-workflows:
-  version: 2
-  secure_build_pipeline:
-    jobs:
-      - vuln_scan
