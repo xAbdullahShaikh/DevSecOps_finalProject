@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: snatchlock-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: snatchlock
+  template:
+    metadata:
+      labels:
+        app: snatchlock
+    spec:
+      containers:
+      - name: snatchlock-container
+        image: codenameab/finalimage:securex
+        ports:
+        - containerPort: 3000  # Update if your React app uses a different port
